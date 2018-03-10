@@ -64,6 +64,30 @@ public class DirectoryWatcherOnDiskTest {
 
   }
 
+  @Test
+  public void deleteParentDirectory() throws IOException, ExecutionException, InterruptedException {
+
+    final CompletableFuture future = this.watcher.watchAsync();
+    final Path root = Files.createTempDirectory(this.tmpDir, null);
+
+    Path parent = root;
+    for (int i = 0; i != 10; ++i) {
+      Path child = Files.createTempDirectory(parent, null);
+      Files.createTempFile(child, null, ".dat");
+      parent = child;
+    }
+    FileUtils.deleteDirectory(root.toFile());
+
+    try {
+      future.get(5, TimeUnit.SECONDS);
+    } catch (TimeoutException e) {
+      // Expected exception.
+    }
+
+    this.recorder.events.forEach(e -> System.out.println(String.format("%s [%s]", e.eventType(), e.path())));
+
+  }
+
   class EventRecorder implements DirectoryChangeListener {
 
     private List<DirectoryChangeEvent> events = new ArrayList<>();
